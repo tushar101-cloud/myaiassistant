@@ -1,4 +1,5 @@
 // public/script.js
+
 const loginForm = document.getElementById("login-form");
 const registerForm = document.getElementById("register-form");
 const showRegisterBtn = document.getElementById("show-register");
@@ -23,8 +24,9 @@ const clearHistoryBtn = document.getElementById("clear-history");
 
 let token = localStorage.getItem("token");
 let username = localStorage.getItem("username");
+const BASE_URL = window.location.origin; // ✅ Ensures correct domain (works on Vercel)
 
-// Toggle forms
+// 🔄 Toggle forms
 showRegisterBtn.addEventListener("click", () => {
   loginForm.classList.add("hidden");
   registerForm.classList.remove("hidden");
@@ -36,40 +38,40 @@ showLoginBtn.addEventListener("click", () => {
   authMsg.textContent = "";
 });
 
-// Register
+// 🧩 Register
 registerBtn.addEventListener("click", async () => {
   const u = registerUsername.value.trim();
   const p = registerPassword.value.trim();
   if (!u || !p) return (authMsg.textContent = "Enter username & password");
 
   try {
-    const res = await fetch("/api/auth/register", {
+    const res = await fetch(`${BASE_URL}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: u, password: p }),
     });
     const data = await res.json();
     if (res.ok) {
-      authMsg.textContent = "Account created. You can log in now.";
+      authMsg.textContent = "✅ Account created. You can log in now.";
       registerForm.classList.add("hidden");
       loginForm.classList.remove("hidden");
     } else {
-      authMsg.textContent = data.error || "Registration failed";
+      authMsg.textContent = data.error || "Registration failed.";
     }
   } catch (err) {
     console.error(err);
-    authMsg.textContent = "Network error";
+    authMsg.textContent = "Network error.";
   }
 });
 
-// Login
+// 🔐 Login
 loginBtn.addEventListener("click", async () => {
   const u = loginUsername.value.trim();
   const p = loginPassword.value.trim();
   if (!u || !p) return (authMsg.textContent = "Enter username & password");
 
   try {
-    const res = await fetch("/api/auth/login", {
+    const res = await fetch(`${BASE_URL}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: u, password: p }),
@@ -82,15 +84,15 @@ loginBtn.addEventListener("click", async () => {
       localStorage.setItem("username", username);
       showChatUI();
     } else {
-      authMsg.textContent = data.error || "Login failed";
+      authMsg.textContent = data.error || "Login failed.";
     }
   } catch (err) {
     console.error(err);
-    authMsg.textContent = "Network error";
+    authMsg.textContent = "Network error.";
   }
 });
 
-// Show chat and load history
+// 🧠 Show chat and load history
 async function showChatUI() {
   authSection.classList.add("hidden");
   chatContainer.classList.remove("hidden");
@@ -98,11 +100,11 @@ async function showChatUI() {
   await loadHistory();
 }
 
-// Load chat history
+// 💾 Load chat history
 async function loadHistory() {
   chatLog.innerHTML = `<div class="text-sm text-gray-400 text-center p-4">Loading history...</div>`;
   try {
-    const res = await fetch("/api/ai/history", {
+    const res = await fetch(`${BASE_URL}/api/ai/history`, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -118,32 +120,38 @@ async function loadHistory() {
     }
   } catch (err) {
     console.error(err);
-    chatLog.innerHTML = `<div class="text-sm text-red-400 text-center p-4">Failed to load history</div>`;
+    chatLog.innerHTML = `<div class="text-sm text-red-400 text-center p-4">Failed to load history.</div>`;
   }
 }
 
-// Append message bubble
+// 💬 Append message
 function appendMsg(sender, text) {
   const wrapper = document.createElement("div");
   wrapper.className = `flex ${sender === "user" ? "justify-end" : "justify-start"}`;
   const bubble = document.createElement("div");
-  bubble.className = `max-w-[75%] px-4 py-3 rounded-2xl shadow-md ${sender === "user" ? "bg-gradient-to-r from-indigo-600 to-pink-600 text-white" : "bg-gray-800 text-gray-100"}`;
+  bubble.className = `max-w-[75%] px-4 py-3 rounded-2xl shadow-md ${
+    sender === "user"
+      ? "bg-gradient-to-r from-indigo-600 to-pink-600 text-white"
+      : "bg-gray-800 text-gray-100"
+  }`;
   bubble.innerHTML = text;
   wrapper.appendChild(bubble);
   chatLog.appendChild(wrapper);
   chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: "smooth" });
 }
 
-// Send message
+// 🚀 Send message
 sendBtn.addEventListener("click", sendMessage);
-userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
+userInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") sendMessage();
+});
 
 async function sendMessage() {
   const txt = userInput.value.trim();
   if (!txt) return;
   appendMsg("user", txt);
   userInput.value = "";
-  // show typing indicator
+
   const typing = document.createElement("div");
   typing.className = "text-sm text-gray-400";
   typing.id = "typing-indicator";
@@ -152,9 +160,12 @@ async function sendMessage() {
   chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: "smooth" });
 
   try {
-    const res = await fetch("/api/ai/ask", {
+    const res = await fetch(`${BASE_URL}/api/ai/ask`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ message: txt }),
     });
     const data = await res.json();
@@ -167,7 +178,7 @@ async function sendMessage() {
   }
 }
 
-// Logout
+// 🚪 Logout
 logoutBtn.addEventListener("click", () => {
   localStorage.removeItem("token");
   localStorage.removeItem("username");
@@ -178,11 +189,14 @@ logoutBtn.addEventListener("click", () => {
   authSection.classList.remove("hidden");
 });
 
-// Clear history (delete memory in DB)
+// 🧹 Clear history
 clearHistoryBtn.addEventListener("click", async () => {
-  if (!confirm("Are you sure you want to clear your chat history? This cannot be undone.")) return;
+  if (!confirm("Are you sure you want to clear your chat history?")) return;
   try {
-    const res = await fetch("/api/ai/clear", { method: "DELETE", headers: { Authorization: `Bearer ${token}` }});
+    const res = await fetch(`${BASE_URL}/api/ai/clear`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
     if (res.ok) {
       chatLog.innerHTML = "";
       appendMsg("ai", "✅ Chat history cleared.");
@@ -195,7 +209,7 @@ clearHistoryBtn.addEventListener("click", async () => {
   }
 });
 
-// Auto-show if already logged in
+// ♻️ Auto-login
 window.addEventListener("load", () => {
   token = localStorage.getItem("token");
   username = localStorage.getItem("username");
