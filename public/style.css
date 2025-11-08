@@ -1,0 +1,4 @@
+/* public/style.css */
+body { font-family: Inter, Roboto, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial; }
+.animate-fadeIn { animation: fadeIn 0.28s ease-in-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
