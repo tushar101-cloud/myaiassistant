@@ -10,7 +10,7 @@ const router = express.Router();
 
 // Gemini setup
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
 // Google Custom Search setup
 const GOOGLE_KEY = process.env.GOOGLE_SEARCH_KEY;
