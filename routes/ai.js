@@ -4,8 +4,9 @@ import axios from "axios";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
-import pkg from "pdf-parse";
-const pdf = pkg;
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const pdf = require("pdf-parse");
 import mammoth from "mammoth";
 import Tesseract from "tesseract.js";
 import { authenticate } from "./user.js";
@@ -154,5 +155,6 @@ User: ${message}
 });
 
 export default router;
+
 
 
