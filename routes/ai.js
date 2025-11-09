@@ -5,6 +5,7 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import pdf from "pdf-parse";
+const pdf = pkg;
 import mammoth from "mammoth";
 import Tesseract from "tesseract.js";
 import { authenticate } from "./user.js";
@@ -153,3 +154,4 @@ User: ${message}
 });
 
 export default router;
+
