@@ -14,7 +14,7 @@ dotenv.config();
 const router = express.Router();
 
 
-const router = express.Router();
+
 
 // -------------------- Gemini Setup --------------------
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -217,6 +217,7 @@ router.delete("/clear", authenticate, async (req, res) => {
 });
 
 export default router;
+
 
 
 
