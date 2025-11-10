@@ -6,7 +6,8 @@ import { authenticate } from "./user.js";
 import User from "../models/User.js";
 import fs from "fs";
 import path from "path";
-import pkg from "pdf-parse";
+import pdf from "pdf-parse/lib/pdf-parse.js";
+
 
 const pdfParse = pkg;
 dotenv.config();
@@ -214,3 +215,4 @@ router.delete("/clear", authenticate, async (req, res) => {
 });
 
 export default router;
+
