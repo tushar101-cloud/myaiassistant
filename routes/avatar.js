@@ -1,34 +1,31 @@
 // routes/avatar.js
 import express from "express";
 import multer from "multer";
-import fs from "fs";
 import path from "path";
+import fs from "fs";
 import { authenticate } from "./user.js";
-import User from "../models/User.js";
 
 const router = express.Router();
 
-// ensure folder
-const avatarDir = "avatars";
-if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir);
+// Ensure upload directories exist
+const uploadDir = "uploads";
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
+// Multer setup
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, avatarDir),
+  destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) =>
-    cb(null, req.userId + path.extname(file.originalname)),
+    cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, "_")}`),
 });
+
 const upload = multer({ storage });
 
-router.post("/upload", authenticate, upload.single("avatar"), async (req, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    user.avatar = `/avatars/${req.file.filename}`;
-    await user.save();
-    res.json({ message: "Avatar updated", avatarUrl: user.avatar });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to upload avatar" });
-  }
+// ✅ File upload endpoint
+router.post("/file", authenticate, upload.single("file"), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "No file uploaded." });
+
+  const fileUrl = `${process.env.BASE_URL || ""}/uploads/${req.file.filename}`;
+  res.json({ message: "✅ File uploaded successfully", url: fileUrl });
 });
 
 export default router;
