@@ -24,32 +24,29 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Serve uploads and public frontend
+// ✅ Static folders
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(express.static(path.join(__dirname, "public")));
 
-// ✅ API Routes
+// ✅ API routes
 app.use("/api/auth", userRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/avatar", avatarRoutes);
 app.use("/api/upload", uploadRoutes);
 
-// ✅ Simple root route (for testing backend)
+// ✅ Root route (test)
 app.get("/", (req, res) => {
   res.send("✅ AI Chatbot backend is running successfully.");
 });
 
-// ✅ Fallback route for SPA or unknown paths (Express 5-compatible)
-app.get("/*", (req, res) => {
+// ✅ Universal fallback (Express 5-safe)
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// ✅ MongoDB connection
+// ✅ MongoDB
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Error:", err));
 
