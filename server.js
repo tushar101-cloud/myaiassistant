@@ -10,6 +10,9 @@ import aiRoutes from "./routes/ai.js";
 import userRoutes from "./routes/user.js";
 import avatarRoutes from "./routes/avatar.js";
 import uploadRoutes from "./routes/upload.js";
+import googleAuthRoutes from "./routes/googleAuth.js";
+app.use("/api/google", googleAuthRoutes);
+
 
 dotenv.config();
 
@@ -55,3 +58,4 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () =>
   console.log(`🚀 Server running on port ${PORT}`)
 );
+
