@@ -1,19 +1,18 @@
-// routes/ai.js
 import express from "express";
 import dotenv from "dotenv";
 import axios from "axios";
 import { authenticate } from "./user.js";
 import User from "../models/User.js";
-import fs from "fs";
+import multer from "multer";
 import path from "path";
+import fs from "fs";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-const pdf = require("pdf-parse");
+const pdf = require("pdf-parse"); // ✅ CORRECT — replaces any “pkg” usage
 
-
-
-const pdfParse = pkg;
 dotenv.config();
+const router = express.Router();
+
 
 const router = express.Router();
 
@@ -218,5 +217,6 @@ router.delete("/clear", authenticate, async (req, res) => {
 });
 
 export default router;
+
 
 
