@@ -11,26 +11,51 @@ const voiceBtn = document.getElementById("voice-btn");
 let token = localStorage.getItem("token");
 let username = localStorage.getItem("username");
 
-// Google login callback
+// ✅ Handle Google login callback
 window.handleGoogleLogin = async (response) => {
   try {
-    const res = await fetch("/api/auth/google", {
+    // Decode the credential token (JWT from Google)
+    const data = parseJwt(response.credential);
+    const googlePayload = {
+      googleId: data.sub,
+      email: data.email,
+      name: data.name,
+      avatar: data.picture
+    };
+
+    // Send to backend
+    const res = await fetch("/api/google/google", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ credential: response.credential }),
+      body: JSON.stringify(googlePayload)
     });
-    const data = await res.json();
-    if (data.token) {
-      token = data.token;
-      username = data.username;
-      localStorage.setItem("token", token);
-      localStorage.setItem("username", username);
-      showChatUI();
+
+    const result = await res.json();
+
+    if (res.ok && result.token) {
+      localStorage.setItem("token", result.token);
+      localStorage.setItem("username", result.username || result.email);
+      if (result.avatar) localStorage.setItem("avatar", result.avatar);
+
+      await showChatUI();
+    } else {
+      authMsg.textContent = result.error || "Google login failed.";
     }
   } catch (err) {
-    console.error("Google login failed", err);
+    console.error("Google login error:", err);
+    authMsg.textContent = "⚠️ Google login failed.";
   }
 };
+
+// Utility to decode Google credential JWT
+function parseJwt(token) {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch (e) {
+    console.error("Failed to decode Google JWT", e);
+    return {};
+  }
+}
 
 // Avatar upload
 avatar.addEventListener("click", () => {
@@ -127,3 +152,4 @@ function showChatUI() {
   document.getElementById("chat-container").classList.remove("hidden");
   document.getElementById("welcome").textContent = `Welcome, ${username}`;
 }
+
