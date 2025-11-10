@@ -20,7 +20,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from public
-app.use(express.static("public"));
+app.use("/uploads", express.static("uploads"));
+
 
 // Routes
 app.use("/api/auth", userRoutes); // register/login, expose authenticate middleware
@@ -42,4 +43,5 @@ mongoose
 // Start server (0.0.0.0 for hosts like Render)
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server running on port ${PORT}`));
+
 
