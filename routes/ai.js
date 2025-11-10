@@ -1,56 +1,48 @@
+// routes/ai.js
 import express from "express";
 import dotenv from "dotenv";
 import axios from "axios";
-import multer from "multer";
-import fs from "fs";
-import path from "path";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const pdf = require("pdf-parse");
-import mammoth from "mammoth";
-import Tesseract from "tesseract.js";
 import { authenticate } from "./user.js";
 import User from "../models/User.js";
+import fs from "fs";
+import path from "path";
+import pkg from "pdf-parse";
 
+const pdfParse = pkg;
 dotenv.config();
+
 const router = express.Router();
 
-// Ensure upload directory
-const uploadDir = "uploads";
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-
-// Multer for uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
-});
-const upload = multer({ storage });
-
-// Gemini API
+// -------------------- Gemini Setup --------------------
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-// Google Custom Search
+// -------------------- Google Search Setup --------------------
 const GOOGLE_KEY = process.env.GOOGLE_SEARCH_KEY;
 const GOOGLE_CX = process.env.GOOGLE_SEARCH_ENGINE_ID;
 
-// 🧠 Get user
+// =======================================================
+// 🧠 Fetch or Create User Memory
+// =======================================================
 async function getUser(userId) {
   const user = await User.findById(userId);
   if (!user) throw new Error("User not found");
   return user;
 }
 
-// 🌍 Google Search
+// =======================================================
+// 🌍 Google Search (primary)
+// =======================================================
 async function googleSearch(query) {
   try {
     const res = await axios.get("https://www.googleapis.com/customsearch/v1", {
       params: { key: GOOGLE_KEY, cx: GOOGLE_CX, q: query },
     });
-    if (res.data.items?.length) {
+
+    if (res.data.items && res.data.items.length > 0) {
       return res.data.items
         .slice(0, 3)
-        .map((i) => `${i.title}: ${i.snippet}`)
+        .map((item) => `${item.title}: ${item.snippet}`)
         .join("\n");
     }
     return null;
@@ -60,101 +52,165 @@ async function googleSearch(query) {
   }
 }
 
-// 🧩 Extract file text
-async function extractFileText(filePath, mimeType) {
-  const ext = path.extname(filePath).toLowerCase();
+// =======================================================
+// 🌐 DuckDuckGo Search (fallback)
+// =======================================================
+async function duckDuckSearch(query) {
   try {
-    if (ext === ".pdf") {
-      const dataBuffer = fs.readFileSync(filePath);
-      const data = await pdf(dataBuffer);
-      return data.text.slice(0, 3000); // limit for API
-    } else if (ext === ".docx") {
-      const result = await mammoth.extractRawText({ path: filePath });
-      return result.value.slice(0, 3000);
-    } else if (ext === ".txt") {
-      return fs.readFileSync(filePath, "utf8").slice(0, 3000);
-    } else if (mimeType.startsWith("image/")) {
-      const { data: { text } } = await Tesseract.recognize(filePath, "eng");
-      return text.slice(0, 2000);
-    }
+    const res = await axios.get("https://api.duckduckgo.com/", {
+      params: { q: query, format: "json", no_redirect: 1, no_html: 1 },
+    });
+    if (res.data.AbstractText) return res.data.AbstractText;
+    if (res.data.RelatedTopics?.length)
+      return res.data.RelatedTopics[0]?.Text || null;
+    return null;
   } catch (err) {
-    console.error("File parse error:", err);
+    console.error("DuckDuckGo fallback failed:", err.message);
+    return null;
   }
-  return "Could not extract readable text from file.";
 }
 
-// 💬 Basic greetings
-function basicResponse(msg, name) {
-  const m = msg.toLowerCase();
-  if (m.includes("hello") || m.includes("hi"))
-    return `👋 Hello${name ? ", " + name : ""}! How can I help today?`;
-  if (m.includes("thank")) return "You're very welcome! 🙏";
-  if (m.includes("bye")) return "👋 Bye! Talk soon.";
+// =======================================================
+// 💬 Basic Small Talk Responses
+// =======================================================
+function basicResponse(message, name) {
+  const msg = message.toLowerCase().trim();
+  if (msg.includes("hello") || msg.includes("hi"))
+    return `👋 Hello${name ? ", " + name : ""}! How can I assist you today?`;
+  if (msg.includes("good morning"))
+    return `🌞 Good morning${name ? ", " + name : ""}! Hope your day goes well.`;
+  if (msg.includes("good night"))
+    return `🌙 Good night${name ? ", " + name : ""}! Sleep well.`;
+  if (msg.includes("how are you"))
+    return "😊 I'm doing great, thanks for asking! How about you?";
+  if (msg.includes("thank")) return "You're very welcome! 🙏";
+  if (msg.includes("bye")) return "👋 Bye! Talk soon.";
   return null;
 }
 
-// 🧠 Chat Endpoint
-router.post("/ask", authenticate, upload.single("file"), async (req, res) => {
+// =======================================================
+// 📂 Read Uploaded File Content (if any)
+// =======================================================
+async function readFileContent(filePath) {
   try {
-    const { message } = req.body;
-    const userId = req.userId;
-    const file = req.file;
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext === ".txt" || ext === ".json") {
+      return fs.readFileSync(filePath, "utf8").slice(0, 2000); // limit length
+    } else if (ext === ".pdf") {
+      const buffer = fs.readFileSync(filePath);
+      const data = await pdfParse(buffer);
+      return data.text.slice(0, 2000);
+    }
+    return "File type not supported for reading.";
+  } catch (err) {
+    console.error("File read error:", err.message);
+    return "Could not read file content.";
+  }
+}
 
-    if (!message && !file)
-      return res.status(400).json({ error: "Message or file required" });
+// =======================================================
+// 🤖 Main Chat Endpoint
+// =======================================================
+router.post("/ask", authenticate, async (req, res) => {
+  try {
+    const { message, filePath } = req.body;
+    const userId = req.userId;
+
+    if (!message) return res.status(400).json({ error: "Message required." });
 
     const user = await getUser(userId);
-    const basic = basicResponse(message || "", user.username);
-    if (basic && !file) {
+    const name = user.username;
+
+    // Handle small talk
+    const basic = basicResponse(message, name);
+    if (basic) {
       user.memory.push({ input: message, response: basic });
       await user.save();
       return res.json({ reply: basic });
     }
 
-    let fileText = "";
-    if (file) {
-      fileText = await extractFileText(file.path, file.mimetype);
+    // Optional: Read file context if present
+    let fileContext = "";
+    if (filePath && fs.existsSync(filePath)) {
+      fileContext = await readFileContent(filePath);
     }
 
-    let webData = await googleSearch(message || "");
+    // Real-time search
+    console.log("🌍 Searching Google for:", message);
+    let webData = await googleSearch(message);
+    if (!webData) webData = await duckDuckSearch(message);
+    if (!webData) webData = "No search results found.";
+
+    // Retrieve chat history
     const history = user.memory
       .slice(-5)
       .map((m) => `User: ${m.input}\nAI: ${m.response}`)
       .join("\n");
 
     const prompt = `
-You are a helpful AI assistant with access to real-time information.
-Use factual and up-to-date knowledge.
+You are a factual, friendly AI assistant.
+Always use verified data and avoid speculation.
 
-Recent chat:
+User name: ${name}
+User avatar: ${user.avatar || "none"}
+
+Recent context:
 ${history}
 
-${file ? `User uploaded file: ${file.originalname}\nExtracted content:\n${fileText}` : ""}
-Web context:
-${webData || "No web data."}
+Web search info:
+${webData}
 
-User: ${message}
+${fileContext ? "File content provided:\n" + fileContext : ""}
+
+User message:
+${message}
 `;
 
-    const gemini = await axios.post(GEMINI_URL, {
+    // Send to Gemini
+    const geminiRes = await axios.post(GEMINI_URL, {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
     const reply =
-      gemini.data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "⚠️ I couldn’t generate a response.";
+      geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "🤖 Sorry, I couldn’t process that.";
 
-    user.memory.push({ input: message || file?.originalname, response: reply });
+    // Save conversation
+    user.memory.push({ input: message, response: reply });
     await user.save();
 
-    res.json({ reply });
+    return res.json({ reply });
   } catch (err) {
     console.error("AI Error:", err.response?.data || err.message);
-    res.status(500).json({ error: "AI processing failed" });
+    res.status(500).json({ error: "AI request failed." });
+  }
+});
+
+// =======================================================
+// 🧾 Get Chat History
+// =======================================================
+router.get("/history", authenticate, async (req, res) => {
+  try {
+    const user = await getUser(req.userId);
+    res.json({ history: user.memory });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch history." });
+  }
+});
+
+// =======================================================
+// 🧹 Clear Chat History
+// =======================================================
+router.delete("/clear", authenticate, async (req, res) => {
+  try {
+    const user = await getUser(req.userId);
+    user.memory = [];
+    await user.save();
+    res.json({ message: "Chat history cleared." });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to clear history." });
   }
 });
 
 export default router;
-
-
-
