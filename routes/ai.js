@@ -6,7 +6,10 @@ import { authenticate } from "./user.js";
 import User from "../models/User.js";
 import fs from "fs";
 import path from "path";
-import pdf from "pdf-parse/lib/pdf-parse.js";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const pdf = require("pdf-parse");
+
 
 
 const pdfParse = pkg;
@@ -215,4 +218,5 @@ router.delete("/clear", authenticate, async (req, res) => {
 });
 
 export default router;
+
 
