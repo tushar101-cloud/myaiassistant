@@ -4,7 +4,8 @@ import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
-import { fileURLToPath } from "url"; // ✅ needed for ES module __dirname equivalent
+import { fileURLToPath } from "url";
+
 import aiRoutes from "./routes/ai.js";
 import userRoutes from "./routes/user.js";
 import avatarRoutes from "./routes/avatar.js";
@@ -18,30 +19,28 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Middlewares
+// ✅ Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Serve static uploads (user avatars, file uploads)
+// ✅ Serve uploads and public frontend
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-// ✅ Serve static frontend files (important for Render deployment)
 app.use(express.static(path.join(__dirname, "public")));
 
-// ✅ API routes
+// ✅ API Routes
 app.use("/api/auth", userRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/avatar", avatarRoutes);
 app.use("/api/upload", uploadRoutes);
 
-// ✅ Root route (for backend testing)
+// ✅ Simple root route (for testing backend)
 app.get("/", (req, res) => {
   res.send("✅ AI Chatbot backend is running successfully.");
 });
 
-// ✅ Fallback to index.html (for frontend routing support)
-app.get("*", (req, res) => {
+// ✅ Fallback route for SPA or unknown paths (Express 5-compatible)
+app.get("/*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
@@ -52,9 +51,9 @@ mongoose
     useUnifiedTopology: true,
   })
   .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+  .catch((err) => console.error("❌ MongoDB Error:", err));
 
-// ✅ Start server (Render requires 0.0.0.0)
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () =>
   console.log(`🚀 Server running on port ${PORT}`)
