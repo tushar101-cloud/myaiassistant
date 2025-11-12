@@ -6,46 +6,43 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// ✅ Initialize dotenv first
+import aiRoutes from "./routes/ai.js";
+import userRoutes, { authenticate } from "./routes/user.js";
+import avatarRoutes from "./routes/avatar.js";
+import uploadRoutes from "./routes/upload.js";
+import googleAuthRoutes from "./routes/googleAuth.js";
+
 dotenv.config();
 
-// ✅ Fix __dirname for ES Modules
+const app = express();
+
+// ✅ Fix for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ Import routes
-import aiRoutes from "./routes/ai.js";
-import userRoutes from "./routes/user.js";
-import avatarRoutes from "./routes/avatar.js";
-import uploadRoutes from "./routes/upload.js";
-import googleAuthRoutes from "./routes/googleAuth.js"; // 👈 New route for Google login
-
-// ✅ Initialize express app
-const app = express();
-
-// ✅ Middlewares
+// ✅ Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Serve static folders
+// ✅ Static folders
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(express.static(path.join(__dirname, "public")));
 
 // ✅ API routes
-app.use("/api/auth", userRoutes);         // Register/Login routes
+app.use("/api/auth", userRoutes);         // Manual register/login
 app.use("/api/google", googleAuthRoutes); // Google OAuth login
-app.use("/api/ai", aiRoutes);
-app.use("/api/avatar", avatarRoutes);
-app.use("/api/upload", uploadRoutes);
+app.use("/api/ai", aiRoutes);             // AI assistant routes
+app.use("/api/avatar", avatarRoutes);     // Avatar upload/fetch
+app.use("/api/upload", uploadRoutes);     // File attachments
 
-// ✅ Test route
+// ✅ Health check (optional)
 app.get("/health", (req, res) => {
-  res.send("✅ AI Chatbot backend running successfully");
+  res.send("✅ AI Assistant backend running successfully!");
 });
 
-// ✅ Fallback to index.html for SPA behavior
-app.get("*", (req, res) => {
+// ✅ Express 5-safe fallback route (for SPA frontends)
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
@@ -57,6 +54,6 @@ mongoose
 
 // ✅ Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+app.listen(PORT, "0.0.0.0", () =>
+  console.log(`🚀 Server running on port ${PORT}`)
+);
