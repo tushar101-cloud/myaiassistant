@@ -6,10 +6,10 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// ✅ Load environment variables
+// ✅ Initialize dotenv first
 dotenv.config();
 
-// ✅ Fix for __dirname in ES modules
+// ✅ Fix __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -18,34 +18,34 @@ import aiRoutes from "./routes/ai.js";
 import userRoutes from "./routes/user.js";
 import avatarRoutes from "./routes/avatar.js";
 import uploadRoutes from "./routes/upload.js";
-import googleAuthRoutes from "./routes/googleAuth.js"; // 👈 added properly here
+import googleAuthRoutes from "./routes/googleAuth.js"; // 👈 New route for Google login
 
-// ✅ Initialize app
+// ✅ Initialize express app
 const app = express();
 
-// ✅ Middleware
+// ✅ Middlewares
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Static folders
+// ✅ Serve static folders
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(express.static(path.join(__dirname, "public")));
 
 // ✅ API routes
-app.use("/api/auth", userRoutes);         // manual register/login
-app.use("/api/google", googleAuthRoutes); // google login
-app.use("/api/ai", aiRoutes);             // AI chat
+app.use("/api/auth", userRoutes);         // Register/Login routes
+app.use("/api/google", googleAuthRoutes); // Google OAuth login
+app.use("/api/ai", aiRoutes);
 app.use("/api/avatar", avatarRoutes);
 app.use("/api/upload", uploadRoutes);
 
-// ✅ Root route (for quick test)
-app.get("/", (req, res) => {
-  res.send("✅ AI Chatbot backend is running successfully.");
+// ✅ Test route
+app.get("/health", (req, res) => {
+  res.send("✅ AI Chatbot backend running successfully");
 });
 
-// ✅ Universal fallback (safe for Render / SPA routing)
-app.use((req, res) => {
+// ✅ Fallback to index.html for SPA behavior
+app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
@@ -57,6 +57,6 @@ mongoose
 
 // ✅ Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () =>
-  console.log(`🚀 Server running on port ${PORT}`)
-);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
