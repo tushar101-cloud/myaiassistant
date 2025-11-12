@@ -7,7 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import aiRoutes from "./routes/ai.js";
-import userRoutes, { authenticate } from "./routes/user.js";
+import userRoutes from "./routes/user.js";
 import avatarRoutes from "./routes/avatar.js";
 import uploadRoutes from "./routes/upload.js";
 import googleAuthRoutes from "./routes/googleAuth.js";
@@ -30,29 +30,33 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(express.static(path.join(__dirname, "public")));
 
 // ✅ API routes
-app.use("/api/auth", userRoutes);         // Manual register/login
-app.use("/api/google", googleAuthRoutes); // Google OAuth login
-app.use("/api/ai", aiRoutes);             // AI assistant routes
-app.use("/api/avatar", avatarRoutes);     // Avatar upload/fetch
-app.use("/api/upload", uploadRoutes);     // File attachments
+app.use("/api/auth", userRoutes);          // Register/Login
+app.use("/api/google", googleAuthRoutes);  // Google Sign-in
+app.use("/api/ai", aiRoutes);              // AI assistant
+app.use("/api/avatar", avatarRoutes);      // Avatar upload/fetch
+app.use("/api/upload", uploadRoutes);      // File attachments
 
-// ✅ Health check (optional)
+// ✅ Health check
 app.get("/health", (req, res) => {
-  res.send("✅ AI Assistant backend running successfully!");
+  res.json({ status: "✅ OK", message: "AI Assistant backend running" });
 });
 
-// ✅ Express 5-safe fallback route (for SPA frontends)
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+// ✅ Catch-all (MUST be last, safe for Express 5)
+app.use((req, res, next) => {
+  if (req.method === "GET") {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+  } else {
+    next();
+  }
 });
 
-// ✅ MongoDB connection
+// ✅ MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI, { dbName: "aiassistant" })
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Error:", err));
 
-// ✅ Start server
+// ✅ Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () =>
   console.log(`🚀 Server running on port ${PORT}`)
