@@ -1,75 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Personal Assistant</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Personal AI Assistant</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="bg-gray-900 text-white flex flex-col h-screen">
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-3xl">
+    <!-- AUTH -->
+    <div id="auth-section" class="bg-gray-800 rounded-2xl p-6 shadow-lg">
+      <h1 class="text-2xl font-bold text-center text-indigo-300 mb-4">My AI Assistant</h1>
 
-  <!-- Authentication Section -->
-  <section id="auth-section" class="flex flex-col justify-center items-center h-full space-y-4">
-    <div class="bg-gray-800 p-6 rounded-xl shadow-lg w-80 text-center">
-      <h2 class="text-2xl font-bold mb-4">Welcome to AI Assistant 🤖</h2>
-
-      <!-- Login Form -->
-      <div id="login-form">
-        <input id="login-username" type="text" placeholder="Username" class="w-full p-2 mb-3 rounded bg-gray-700 border border-gray-600" />
-        <input id="login-password" type="password" placeholder="Password" class="w-full p-2 mb-3 rounded bg-gray-700 border border-gray-600" />
-        <button id="login-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 py-2 rounded font-semibold">Login</button>
-        <button id="show-register" class="text-sm text-indigo-400 mt-3">Create account</button>
-      </div>
-
-      <!-- Register Form -->
-      <div id="register-form" class="hidden">
-        <input id="register-username" type="text" placeholder="Username" class="w-full p-2 mb-3 rounded bg-gray-700 border border-gray-600" />
-        <input id="register-password" type="password" placeholder="Password" class="w-full p-2 mb-3 rounded bg-gray-700 border border-gray-600" />
-        <button id="register-btn" class="w-full bg-pink-600 hover:bg-pink-700 py-2 rounded font-semibold">Register</button>
-        <button id="show-login" class="text-sm text-indigo-400 mt-3">Back to login</button>
-      </div>
-
-      <!-- Google Sign In -->
-      <div class="my-4">
-        <div id="g_id_onload"
-          data-client_id="758871210507-tcbjr6lb889o1rpfljgf4ii975bshifu.apps.googleusercontent.com"
-          data-context="signin"
-          data-ux_mode="popup"
-          data-callback="handleGoogleLogin"
-          data-auto_prompt="false">
+      <div id="auth-forms" class="space-y-4">
+        <div id="login-form">
+          <input id="login-username" placeholder="Username" class="w-full p-3 rounded bg-gray-700"/>
+          <input id="login-password" type="password" placeholder="Password" class="w-full p-3 rounded bg-gray-700"/>
+          <div class="flex gap-2 mt-3">
+            <button id="login-btn" class="flex-1 bg-indigo-600 p-2 rounded">Login</button>
+            <button id="show-register" class="flex-1 bg-gray-700 p-2 rounded">Register</button>
+          </div>
         </div>
-        <div class="g_id_signin" data-type="standard"></div>
-      </div>
 
-      <p id="auth-msg" class="text-red-400 text-sm mt-2"></p>
-    </div>
-  </section>
-
-  <!-- Chat Section -->
-  <section id="chat-container" class="hidden flex flex-col h-full">
-    <div class="flex items-center justify-between bg-gray-800 p-4 border-b border-gray-700">
-      <div class="flex items-center gap-3">
-        <img id="avatar" src="https://i.pravatar.cc/50" class="w-10 h-10 rounded-full border border-gray-600 cursor-pointer" title="Upload new avatar">
-        <h2 id="welcome" class="font-semibold text-lg"></h2>
+        <div id="register-form" class="hidden">
+          <input id="register-username" placeholder="Choose a username" class="w-full p-3 rounded bg-gray-700"/>
+          <input id="register-password" type="password" placeholder="Choose a password" class="w-full p-3 rounded bg-gray-700"/>
+          <div class="flex gap-2 mt-3">
+            <button id="register-btn" class="flex-1 bg-green-600 p-2 rounded">Create account</button>
+            <button id="show-login" class="flex-1 bg-gray-700 p-2 rounded">Back to login</button>
+          </div>
+        </div>
       </div>
-      <div class="space-x-3">
-        <button id="clear-history" class="text-sm text-yellow-400">🧹 Clear</button>
-        <button id="logout-btn" class="text-sm text-red-400">Logout</button>
-      </div>
+      <p id="auth-msg" class="text-sm text-gray-400 mt-3 text-center"></p>
     </div>
 
-    <div id="chat-log" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+    <!-- CHAT -->
+    <div id="chat-container" class="hidden mt-6 bg-gray-800 rounded-2xl p-4 shadow-lg flex flex-col h-[70vh]">
+      <div class="flex justify-between items-center mb-3">
+        <div class="text-lg font-semibold" id="welcome"></div>
+        <div class="flex gap-2">
+          <button id="clear-history" class="text-sm px-3 py-1 bg-yellow-600 rounded">Clear history</button>
+          <button id="logout-btn" class="text-sm px-3 py-1 bg-red-600 rounded">Logout</button>
+        </div>
+      </div>
 
-    <div class="p-3 bg-gray-800 flex items-center gap-2 border-t border-gray-700">
-      <input id="user-input" type="text" placeholder="Type a message..." class="flex-1 p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:outline-none">
-      <input type="file" id="file-input" class="hidden" />
-      <button id="attach-btn" class="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded">📎</button>
-      <button id="voice-btn" class="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded">🎤</button>
-      <button id="send-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded font-semibold">Send</button>
+      <div id="chat-log" class="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-900 rounded"></div>
+
+      <div class="mt-3 flex gap-2">
+        <input id="user-input" class="flex-1 p-3 rounded bg-gray-700" placeholder="Type a message..." />
+        <button id="send-btn" class="px-4 py-3 bg-indigo-600 rounded">Send</button>
+      </div>
     </div>
-  </section>
+  </div>
 
   <script src="script.js"></script>
 </body>
